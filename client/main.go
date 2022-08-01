@@ -42,8 +42,11 @@ func callListFiles(client pb.FileServiceClient) {
 }
 
 func callDownload(client pb.FileServiceClient) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	req := &pb.DownloadRequest{Filename: "name.txt"}
-	stream, err := client.Download(context.Background(), req)
+	stream, err := client.Download(ctx, req)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -58,6 +61,8 @@ func callDownload(client pb.FileServiceClient) {
 			if ok {
 				if resErr.Code() == codes.NotFound {
 					log.Fatalf("Error Code: %v, Error Message: %v", resErr.Code(), resErr.Message())
+				} else if resErr.Code() == codes.DeadlineExceeded {
+					log.Fatalln("deadline exceeded")
 				} else {
 					log.Fatalln("unknown grpc error")
 				}
